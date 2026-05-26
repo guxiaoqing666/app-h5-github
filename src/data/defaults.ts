@@ -22,7 +22,7 @@ export function createDefaultProfile(userId: string): Profile {
     home_area: "合肥",
     commute_minutes: 45,
     education: "",
-    major: "",
+    major: "护理",
     age: null,
     certificates: "",
     political_status: "",
