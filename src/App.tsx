@@ -65,7 +65,7 @@ const navItems: Array<{
   { to: "/plan", label: "计划", icon: ClipboardList },
   { to: "/exams", label: "倒计时", icon: CalendarDays },
   { to: "/targets", label: "单位", icon: MapPinned },
-  { to: "/profile", label: "档案", icon: UserRound },
+  { to: "/profile", label: "小香", icon: UserRound },
 ];
 
 export default function App() {
@@ -111,7 +111,7 @@ function SplashScreen() {
     <main className="auth-page">
       <div className="auth-panel">
         <Loader2 className="spin" aria-hidden="true" />
-        <h1>小满上岸计划</h1>
+        <h1>小香上岸计划</h1>
         <p>正在准备今日安排</p>
       </div>
     </main>
@@ -154,7 +154,7 @@ function AuthScreen() {
         <div className="brand-mark" aria-hidden="true">
           <BookOpen />
         </div>
-        <h1>小满上岸计划</h1>
+        <h1>小香上岸计划</h1>
         <p>学习计划、每日打卡、考试倒计时和合肥目标单位。</p>
 
         <div className="segmented" role="tablist" aria-label="登录方式">
@@ -224,7 +224,7 @@ function AppShell({ session }: { session: Session | null }) {
             <BookOpen />
           </div>
           <div>
-            <strong>小满上岸计划</strong>
+            <strong>小香上岸计划</strong>
             <span>{data.profile.display_name || "备考中"}</span>
           </div>
         </div>
@@ -690,7 +690,7 @@ function ProfilePage() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">个人条件</span>
-            <h2>备考档案</h2>
+            <h2>小香档案</h2>
           </div>
         </div>
         <form className="form-grid profile-form" onSubmit={handleSave}>
@@ -809,7 +809,7 @@ function ProfilePage() {
           </label>
           <button className="primary-action" type="submit">
             <Save />
-            保存档案
+            保存小香档案
           </button>
         </form>
       </section>

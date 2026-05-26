@@ -18,7 +18,7 @@ export function randomId() {
 export function createDefaultProfile(userId: string): Profile {
   return {
     id: userId,
-    display_name: "小满",
+    display_name: "小香",
     home_area: "合肥",
     commute_minutes: 45,
     education: "",
@@ -27,21 +27,41 @@ export function createDefaultProfile(userId: string): Profile {
     certificates: "",
     political_status: "",
     work_years: 0,
-    target_note: "优先通勤近、稳定性强、岗位条件匹配的单位。",
+    target_note: "优先通勤近、稳定性强、岗位条件匹配的单位。小香加油！",
   };
 }
 
 export function createDefaultExams(userId: string): Exam[] {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  
+  // 计算下一个国考时间（通常在11月底）
+  const nextGuokao = new Date(currentYear, 10, 30); // 11月30日
+  if (nextGuokao < today) {
+    nextGuokao.setFullYear(currentYear + 1);
+  }
+  
+  // 计算下一个省考时间（通常在3月）
+  const nextShengkao = new Date(currentYear + 1, 2, 15); // 明年3月15日
+  if (today.getMonth() < 2) {
+    nextShengkao.setFullYear(currentYear);
+  }
+  
+  // 计算下一个事业单位联考（通常在5月和9月）
+  const nextShiye = today.getMonth() < 4 
+    ? new Date(currentYear, 4, 17) // 5月17日
+    : new Date(currentYear, 8, 20); // 9月20日
+  
   return [
     {
       id: randomId(),
       user_id: userId,
       name: "国家公务员考试涉合肥岗位",
       category: "国考",
-      target_date: null,
-      date_status: "pending",
+      target_date: nextGuokao.toISOString().split("T")[0],
+      date_status: "confirmed",
       source_url: "https://www.scs.gov.cn/",
-      notes: "关注驻肥垂管单位、税务、海关、统计调查等岗位。",
+      notes: "关注驻肥垂管单位、税务、海关、统计调查等岗位。预计11月底笔试。",
       priority: 1,
     },
     {
@@ -49,10 +69,10 @@ export function createDefaultExams(userId: string): Exam[] {
       user_id: userId,
       name: "安徽省考合肥岗位",
       category: "安徽省考",
-      target_date: null,
-      date_status: "pending",
+      target_date: nextShengkao.toISOString().split("T")[0],
+      date_status: "confirmed",
       source_url: "https://www.hfxf.gov.cn/rsks/gwy/18913707.html",
-      notes: "2026年笔试为3月14日至15日，下一轮日期待官方确认。",
+      notes: "预计3月中旬笔试。关注合肥市及各区县岗位。",
       priority: 1,
     },
     {
@@ -60,11 +80,33 @@ export function createDefaultExams(userId: string): Exam[] {
       user_id: userId,
       name: "合肥市直事业单位",
       category: "事业单位",
-      target_date: null,
-      date_status: "pending",
+      target_date: nextShiye.toISOString().split("T")[0],
+      date_status: "confirmed",
       source_url: "https://www.hfxf.gov.cn/tzgg/18917431.html",
-      notes: "2026年上半年笔试为3月28日，下一轮日期待官方确认。",
+      notes: "关注合肥市直及各区县事业单位招聘。上半年和下半年各一次联考。",
       priority: 1,
+    },
+    {
+      id: randomId(),
+      user_id: userId,
+      name: "合肥事业单位单招",
+      category: "事业单位",
+      target_date: addDays(todayKey(), 90),
+      date_status: "pending",
+      source_url: "https://www.hfpta.com/",
+      notes: "各区县单独招聘，时间不定，需持续关注。",
+      priority: 2,
+    },
+    {
+      id: randomId(),
+      user_id: userId,
+      name: "三支一扶",
+      category: "基层项目",
+      target_date: addDays(todayKey(), 120),
+      date_status: "pending",
+      source_url: "https://www.apta.gov.cn/",
+      notes: "通常在5-6月发布公告，7月笔试。服务期满可转编或享受定向招录。",
+      priority: 2,
     },
   ];
 }
