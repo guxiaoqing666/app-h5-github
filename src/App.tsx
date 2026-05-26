@@ -40,6 +40,7 @@ import {
 import { StudyDataProvider, useStudyData } from "./data/store";
 import { randomId } from "./data/defaults";
 import {
+  addDays,
   calculateStreak,
   completedMinutes,
   daysUntil,
