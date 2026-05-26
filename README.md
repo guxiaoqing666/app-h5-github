@@ -18,6 +18,8 @@ npm.cmd run dev
 3. 复制 `.env.example` 为 `.env.local`，填入 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。
 4. 重新运行 `npm.cmd run dev`。
 
+密码 svynd8jU7UsrnHMO
+
 Supabase anon key 可以放在前端，数据隔离由 Row Level Security 策略控制。
 
 ## GitHub Pages 发布

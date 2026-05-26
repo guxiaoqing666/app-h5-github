@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -63,6 +64,7 @@ const navItems: Array<{
 }> = [
   { to: "/", label: "今日", icon: Home },
   { to: "/plan", label: "计划", icon: ClipboardList },
+  { to: "/stats", label: "统计", icon: BarChart3 },
   { to: "/exams", label: "倒计时", icon: CalendarDays },
   { to: "/targets", label: "单位", icon: MapPinned },
   { to: "/profile", label: "小香", icon: UserRound },
@@ -282,6 +284,7 @@ function AppShell({ session }: { session: Session | null }) {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/plan" element={<StudyPlanPage />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/exams" element={<ExamsPage />} />
             <Route path="/targets" element={<TargetsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
@@ -828,6 +831,196 @@ function ProfilePage() {
   );
 }
 
+function StatsPage() {
+  const { data } = useStudyData();
+  const today = todayKey();
+  
+  // 计算统计数据
+  const totalTasks = data.study_tasks.length;
+  const doneTasks = data.study_tasks.filter(t => t.status === "done").length;
+  const taskRate = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  
+  const totalMinutes = data.checkins.reduce((sum, c) => sum + c.minutes, 0) + 
+    completedMinutes(data.study_tasks);
+  const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+  
+  const streak = calculateStreak(data.checkins);
+  
+  // 按科目统计学习时间
+  const trackStats: Record<string, { minutes: number; tasks: number; done: number }> = {};
+  data.study_tasks.forEach(task => {
+    if (!trackStats[task.track]) {
+      trackStats[task.track] = { minutes: 0, tasks: 0, done: 0 };
+    }
+    trackStats[task.track].minutes += task.duration_minutes;
+    trackStats[task.track].tasks += 1;
+    if (task.status === "done") {
+      trackStats[task.track].done += 1;
+    }
+  });
+  
+  // 打卡天数统计
+  const checkinDays = data.checkins.length;
+  const moodCounts: Record<string, number> = {};
+  data.checkins.forEach(c => {
+    moodCounts[c.mood] = (moodCounts[c.mood] || 0) + 1;
+  });
+  
+  // 最近7天学习时长
+  const last7Days: Array<{ date: string; minutes: number }> = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const checkin = data.checkins.find(c => c.checkin_date === d);
+    const dayTasks = data.study_tasks.filter(t => t.task_date === d && t.status === "done");
+    const dayMinutes = (checkin?.minutes || 0) + dayTasks.reduce((s, t) => s + t.duration_minutes, 0);
+    last7Days.push({ date: d.slice(5), minutes: dayMinutes });
+  }
+  
+  const maxDayMinutes = Math.max(...last7Days.map(d => d.minutes), 1);
+  
+  return (
+    <div className="page-stack">
+      <section className="welcome-band slim">
+        <div>
+          <span className="eyebrow">数据驱动</span>
+          <h2>小香的学习统计</h2>
+          <p>用数据看清进步，找到发力点。</p>
+        </div>
+        <BarChart3 aria-hidden="true" className="band-icon" />
+      </section>
+      
+      {/* 核心指标 */}
+      <section className="stat-grid" aria-label="核心指标">
+        <StatCard icon={CheckCircle2} label="任务完成率" value={`${taskRate}%`} />
+        <StatCard icon={Clock3} label="累计学习" value={`${totalHours}h`} />
+        <StatCard icon={Flame} label="连续打卡" value={`${streak} 天`} />
+        <StatCard icon={CalendarDays} label="打卡天数" value={`${checkinDays} 天`} />
+      </section>
+      
+      {/* 最近7天柱状图 */}
+      <section className="section-block">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">近7天</span>
+            <h2>学习时长趋势</h2>
+          </div>
+        </div>
+        <div className="chart-container">
+          {last7Days.map((day, i) => (
+            <div key={i} className="chart-bar-wrapper">
+              <div 
+                className="chart-bar" 
+                style={{ height: `${(day.minutes / maxDayMinutes) * 100}%` }}
+              />
+              <span className="chart-label">{day.date}</span>
+              <span className="chart-value">{day.minutes}m</span>
+            </div>
+          ))}
+        </div>
+      </section>
+      
+      {/* 科目分布 */}
+      <section className="section-block">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">科目分析</span>
+            <h2>学习分布</h2>
+          </div>
+        </div>
+        <div className="track-stats">
+          {Object.entries(trackStats).sort((a, b) => b[1].minutes - a[1].minutes).map(([track, stat]) => (
+            <div key={track} className="track-stat-row">
+              <div className="track-info">
+                <strong>{track}</strong>
+                <span>{stat.done}/{stat.tasks} 完成</span>
+              </div>
+              <div className="track-bar-bg">
+                <div 
+                  className="track-bar-fill" 
+                  style={{ width: `${stat.tasks ? (stat.done / stat.tasks) * 100 : 0}%` }}
+                />
+              </div>
+              <span className="track-minutes">{stat.minutes}分钟</span>
+            </div>
+          ))}
+          {Object.keys(trackStats).length === 0 && (
+            <EmptyState icon={BarChart3} title="还没有学习任务数据" />
+          )}
+        </div>
+      </section>
+      
+      {/* 心情分布 */}
+      {checkinDays > 0 && (
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">状态追踪</span>
+              <h2>打卡心情</h2>
+            </div>
+          </div>
+          <div className="mood-grid">
+            {Object.entries(moodCounts).map(([mood, count]) => {
+              const moodLabels: Record<string, string> = {
+                steady: "稳稳推进",
+                focused: "状态很好",
+                tired: "有点累",
+                restart: "重新找节奏",
+              };
+              return (
+                <div key={mood} className="mood-item">
+                  <span className="mood-emoji">
+                    {mood === "steady" ? "🐢" : mood === "focused" ? "🚀" : mood === "tired" ? "😴" : "🌱"}
+                  </span>
+                  <span className="mood-label">{moodLabels[mood] || mood}</span>
+                  <strong>{count}次</strong>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      
+      {/* 目标进度 */}
+      <section className="section-block">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">阶段目标</span>
+            <h2>目标进度</h2>
+          </div>
+        </div>
+        <div className="goal-progress-list">
+          {data.goals.map(goal => {
+            const progress = goal.target ? Math.round((goal.current / goal.target) * 100) : 0;
+            const daysLeft = goal.due_date ? daysUntil(goal.due_date) : null;
+            return (
+              <div key={goal.id} className="goal-progress-item">
+                <div className="goal-header">
+                  <strong>{goal.title}</strong>
+                  <span>{goal.current}/{goal.target} {goal.metric}</span>
+                </div>
+                <div className="goal-bar-bg">
+                  <div className="goal-bar-fill" style={{ width: `${Math.min(progress, 100)}%` }} />
+                </div>
+                <div className="goal-meta">
+                  <span>进度 {progress}%</span>
+                  {daysLeft !== null && (
+                    <span className={daysLeft < 7 ? "urgent" : ""}>
+                      {daysLeft > 0 ? `还剩 ${daysLeft} 天` : "已过期"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {data.goals.length === 0 && (
+            <EmptyState icon={Target} title="还没有设置目标" />
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -961,6 +1154,9 @@ function TaskForm({
           <option value="申论">申论</option>
           <option value="职测">职测</option>
           <option value="综应A">综应A</option>
+          <option value="医学基础">医学基础</option>
+          <option value="护理专业">护理专业</option>
+          <option value="公共基础">公共基础</option>
         </select>
       </label>
       <label>
@@ -1431,6 +1627,8 @@ function TargetUnitForm({
           <option value="省直/事业单位">省直/事业单位</option>
           <option value="基层">基层</option>
           <option value="国考">国考</option>
+          <option value="医疗编">医疗编</option>
+          <option value="护理岗">护理岗</option>
         </select>
       </label>
       <label>
